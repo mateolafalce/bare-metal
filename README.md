@@ -37,7 +37,7 @@ You can run the disk image in [QEMU](https://www.qemu.org/) through.
 cargo run
 ```
 
-[QEMU] and the [`bootimage`] tool need to be installed for this.
+QEMU and the [`bootimage`] tool need to be installed for this.
 
 You can also write the image to an USB stick for booting it on a real machine. On Linux, the command for this is:
 
