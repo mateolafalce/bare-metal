@@ -1,8 +1,10 @@
-use crate::{vga_buffer::WRITER, gdt, hlt_loop, print, println};
+use crate::{gdt, hlt_loop, println, vga_buffer::WRITER};
 use alloc::string::{String, ToString};
+use core::arch::asm;
 use lazy_static::lazy_static;
 use pic8259::ChainedPics;
 use spin;
+use spin::Mutex;
 use x86_64::{
     instructions::port::Port,
     structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode},
@@ -45,6 +47,7 @@ lazy_static! {
         idt[InterruptIndex::Keyboard.as_usize()].set_handler_fn(keyboard_interrupt_handler);
         idt
     };
+    static ref INDEX_MENU: Mutex<u8> = Mutex::new(0);
 }
 
 pub fn init_idt() {
@@ -83,7 +86,9 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    use pc_keyboard::{layouts, DecodedKey, HandleControl, KeyCode, Keyboard, ScancodeSet1};
+    use pc_keyboard::{
+        DecodedKey, HandleControl, KeyCode, KeyEvent, KeyState, Keyboard, ScancodeSet1, layouts,
+    };
     use spin::Mutex;
     use x86_64::instructions::port::Port;
 
@@ -99,26 +104,57 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     let mut keyboard = KEYBOARD.lock();
     let mut port = Port::new(0x60);
 
+    let other_case = KeyEvent::new(KeyCode::F12, KeyState::SingleShot);
+
     let scancode: u8 = unsafe { port.read() };
-    if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
-        if let Some(key) = keyboard.process_keyevent(key_event) {
-            match key {
-                DecodedKey::Unicode(character) => (),
-                DecodedKey::RawKey(key) => match key {
-                    KeyCode::ArrowUp => {
-                        let mut writer = WRITER.lock();
-                        writer.write_char_at(1,23,b' ');
-                        writer.write_char_at(1,22,b'*');
-                    }
-                    KeyCode::ArrowDown => {
-                        let mut writer = WRITER.lock();
-                        writer.write_char_at(1,22,b' ');
-                        writer.write_char_at(1,23,b'*');
-                    }
+    let key_event_any = match keyboard.add_byte(scancode) {
+        Ok(key_event) => key_event,
+        Err(_) => Some(other_case.clone()),
+    };
+
+    let key_event = match key_event_any {
+        Some(key) => key,
+        None => other_case,
+    };
+
+    let key = match keyboard.process_keyevent(key_event) {
+        Some(key) => key,
+        None => pc_keyboard::DecodedKey::RawKey(KeyCode::F12),
+    };
+
+    match key {
+        DecodedKey::Unicode(key) => match key {
+            '\n' => {
+                let index = INDEX_MENU.lock();
+                match *index {
+                    0 => reboot(),
+                    1 => turn_off(),
                     _ => (),
-                },
+                }
             }
-        }
+            _ => (),
+        },
+        DecodedKey::RawKey(key) => match key {
+            KeyCode::ArrowUp => {
+                let mut writer = WRITER.lock();
+                writer.write_char_at(1, 23, b' ');
+                writer.write_char_at(1, 22, b'*');
+                let mut menu = INDEX_MENU.lock();
+                if *menu > 0 {
+                    *menu -= 1;
+                }
+            }
+            KeyCode::ArrowDown => {
+                let mut writer = WRITER.lock();
+                writer.write_char_at(1, 22, b' ');
+                writer.write_char_at(1, 23, b'*');
+                let mut menu = INDEX_MENU.lock();
+                if *menu < 1 {
+                    *menu += 1;
+                }
+            }
+            _ => (),
+        },
     }
 
     unsafe {
@@ -147,5 +183,29 @@ pub fn disable_cursor() {
         let mut vga_data = Port::<u8>::new(0x3D5);
         vga_index.write(0x0A);
         vga_data.write(0x20);
+    }
+}
+
+pub fn reboot() -> ! {
+    unsafe {
+        loop {
+            outb(0x64, 0xFE);
+        }
+    }
+}
+
+unsafe fn outb(port: u16, val: u8) {
+    unsafe {
+        asm!("out dx, al", in("dx") port, in("al") val);
+    }
+}
+
+unsafe fn outw(port: u16, val: u16) {
+    asm!("out dx, ax", in("dx") port, in("ax") val);
+}
+
+fn turn_off() {
+    unsafe {
+        outw(0x604, 0x2000);
     }
 }

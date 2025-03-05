@@ -6,13 +6,11 @@
 
 extern crate alloc;
 
-use alloc::{boxed::Box, rc::Rc, string::String, vec, vec::Vec};
 use bare_metal::{
     interrupts::{clear_screen, disable_cursor},
-    print, println,
+    println,
 };
-use bootloader::{entry_point, BootInfo};
-use core::arch::x86_64::__cpuid;
+use bootloader::{BootInfo, entry_point};
 use core::panic::PanicInfo;
 
 entry_point!(kernel_main);
@@ -32,7 +30,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     disable_cursor();
     clear_screen();
-    println!("[*] ok\n[ ] no");
+    println!("[*] Reboot\n[ ] Shutdown");
 
     bare_metal::hlt_loop();
 }
@@ -54,13 +52,4 @@ fn panic(info: &PanicInfo) -> ! {
 #[test_case]
 fn trivial_assertion() {
     assert_eq!(1, 1);
-}
-
-fn get_cpu_vendor() -> Vec<u8> {
-    let cpuid = unsafe { __cpuid(0) };
-    let mut vendor = [0u8; 12];
-    vendor[0..4].copy_from_slice(&cpuid.ebx.to_le_bytes());
-    vendor[4..8].copy_from_slice(&cpuid.edx.to_le_bytes());
-    vendor[8..12].copy_from_slice(&cpuid.ecx.to_le_bytes());
-    vendor.to_vec()
 }

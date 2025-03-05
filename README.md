@@ -1,6 +1,9 @@
 # Bare metal rust device
 
-Fork from [Writing an OS in Rust](https://os.phil-opp.com) series.
+VGA Menu operations:
+
++ Reboot
++ Shutdown
 
 ## Building
 
@@ -10,9 +13,7 @@ You can build the project by running:
 cargo build
 ```
 
-To create a bootable disk image from the compiled kernel, you need to install the [`bootimage`] tool:
-
-[`bootimage`]: https://github.com/rust-osdev/bootimage
+To create a bootable disk image from the compiled kernel, you need to install the [`bootimage`] tool.
 
 ```
 cargo install bootimage
@@ -30,9 +31,7 @@ Please file an issue if you have any problems.
 
 ## Running
 
-You can run the disk image in [QEMU] through:
-
-[QEMU]: https://www.qemu.org/
+You can run the disk image in [QEMU](https://www.qemu.org/) through.
 
 ```
 cargo run

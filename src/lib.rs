@@ -3,7 +3,6 @@
 #![feature(custom_test_frameworks)]
 #![feature(abi_x86_interrupt)]
 
-
 extern crate alloc;
 use core::panic::PanicInfo;
 
@@ -74,7 +73,7 @@ pub fn hlt_loop() -> ! {
 }
 
 #[cfg(test)]
-use bootloader::{entry_point, BootInfo};
+use bootloader::{BootInfo, entry_point};
 
 #[cfg(test)]
 entry_point!(test_kernel_main);
