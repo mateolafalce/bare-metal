@@ -123,16 +123,13 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     };
 
     match key {
-        DecodedKey::Unicode(key) => match key {
-            '\n' => {
-                let index = INDEX_MENU.lock();
-                match *index {
-                    0 => reboot(),
-                    1 => turn_off(),
-                    _ => (),
-                }
+        DecodedKey::Unicode(key) => if key == '\n' {
+            let index = INDEX_MENU.lock();
+           match *index {
+               0 => reboot(),
+               1 => turn_off(),
+                 _ => (),
             }
-            _ => (),
         },
         DecodedKey::RawKey(key) => match key {
             KeyCode::ArrowUp => {
@@ -170,7 +167,7 @@ fn test_breakpoint_exception() {
 }
 
 pub fn clear_screen() {
-    let blank = [' ' as u8; 80];
+    let blank = [b' '; 80];
     let blank_string = String::from_utf8_lossy(&blank).to_string();
     for _ in 0..25 {
         println!("{}", blank_string);
@@ -201,7 +198,9 @@ unsafe fn outb(port: u16, val: u8) {
 }
 
 unsafe fn outw(port: u16, val: u16) {
-    asm!("out dx, ax", in("dx") port, in("ax") val);
+    unsafe {
+        asm!("out dx, ax", in("dx") port, in("ax") val);
+    }
 }
 
 fn turn_off() {

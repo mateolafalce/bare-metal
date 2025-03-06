@@ -4,6 +4,8 @@ use x86_64::{
     structures::paging::{FrameAllocator, OffsetPageTable, PageTable, PhysFrame, Size4KiB},
 };
 
+/// # Safety
+/// 
 /// Initialize a new OffsetPageTable.
 ///
 /// This function is unsafe because the caller must guarantee that the
@@ -11,10 +13,14 @@ use x86_64::{
 /// `physical_memory_offset`. Also, this function must be only called once
 /// to avoid aliasing `&mut` references (which is undefined behavior).
 pub unsafe fn init(physical_memory_offset: VirtAddr) -> OffsetPageTable<'static> {
-    let level_4_table = active_level_4_table(physical_memory_offset);
-    OffsetPageTable::new(level_4_table, physical_memory_offset)
+    unsafe {
+        let level_4_table = active_level_4_table(physical_memory_offset);
+        OffsetPageTable::new(level_4_table, physical_memory_offset)
+    }
 }
 
+/// # Safety
+/// 
 /// Returns a mutable reference to the active level 4 table.
 ///
 /// This function is unsafe because the caller must guarantee that the
@@ -30,7 +36,7 @@ unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut
     let virt = physical_memory_offset + phys.as_u64();
     let page_table_ptr: *mut PageTable = virt.as_mut_ptr();
 
-    &mut *page_table_ptr // unsafe
+    unsafe { &mut *page_table_ptr }
 }
 
 /// A FrameAllocator that always returns `None`.
@@ -49,6 +55,8 @@ pub struct BootInfoFrameAllocator {
 }
 
 impl BootInfoFrameAllocator {
+    /// # Safety
+    ///
     /// Create a FrameAllocator from the passed memory map.
     ///
     /// This function is unsafe because the caller must guarantee that the passed
@@ -75,6 +83,9 @@ impl BootInfoFrameAllocator {
     }
 }
 
+/// # Safety
+///
+/// It's not safe be careful
 unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
         let frame = self.usable_frames().nth(self.next);

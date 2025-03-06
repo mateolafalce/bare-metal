@@ -21,7 +21,7 @@ pub fn init() {
 }
 
 pub trait Testable {
-    fn run(&self) -> ();
+    fn run(&self);
 }
 
 impl<T> Testable for T
