@@ -123,14 +123,16 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     };
 
     match key {
-        DecodedKey::Unicode(key) => if key == '\n' {
-            let index = INDEX_MENU.lock();
-           match *index {
-               0 => reboot(),
-               1 => turn_off(),
-                 _ => (),
+        DecodedKey::Unicode(key) => {
+            if key == '\n' {
+                let index = INDEX_MENU.lock();
+                match *index {
+                    0 => reboot(),
+                    1 => turn_off(),
+                    _ => (),
+                }
             }
-        },
+        }
         DecodedKey::RawKey(key) => match key {
             KeyCode::ArrowUp => {
                 let mut writer = WRITER.lock();

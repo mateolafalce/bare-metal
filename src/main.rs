@@ -8,7 +8,7 @@ extern crate alloc;
 
 use bare_metal::{
     interrupts::{clear_screen, disable_cursor},
-    println,
+    println, hlt_loop, init, 
 };
 use bootloader::{BootInfo, entry_point};
 use core::panic::PanicInfo;
@@ -20,7 +20,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     use bare_metal::memory::{self, BootInfoFrameAllocator};
     use x86_64::VirtAddr;
 
-    bare_metal::init();
+    init();
 
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
@@ -32,7 +32,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     clear_screen();
     println!("[*] Reboot\n[ ] Shutdown");
 
-    bare_metal::hlt_loop();
+    hlt_loop();
 }
 
 /// This function is called on panic.
@@ -46,7 +46,7 @@ fn panic(info: &PanicInfo) -> ! {
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    blog_os::test_panic_handler(info)
+    bare_metal::test_panic_handler(info)
 }
 
 #[test_case]

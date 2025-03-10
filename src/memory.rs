@@ -5,7 +5,7 @@ use x86_64::{
 };
 
 /// # Safety
-/// 
+///
 /// Initialize a new OffsetPageTable.
 ///
 /// This function is unsafe because the caller must guarantee that the
@@ -20,7 +20,7 @@ pub unsafe fn init(physical_memory_offset: VirtAddr) -> OffsetPageTable<'static>
 }
 
 /// # Safety
-/// 
+///
 /// Returns a mutable reference to the active level 4 table.
 ///
 /// This function is unsafe because the caller must guarantee that the

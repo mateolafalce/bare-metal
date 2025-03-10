@@ -2,6 +2,8 @@
 #![cfg_attr(test, no_main)]
 #![feature(custom_test_frameworks)]
 #![feature(abi_x86_interrupt)]
+#![feature(temporary_niche_types)]
+#![allow(non_camel_case_types)]
 
 extern crate alloc;
 use core::panic::PanicInfo;
@@ -82,7 +84,6 @@ entry_point!(test_kernel_main);
 #[cfg(test)]
 fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
     init();
-    test_main();
     hlt_loop();
 }
 
