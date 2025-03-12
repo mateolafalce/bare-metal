@@ -7,8 +7,10 @@
 extern crate alloc;
 
 use bare_metal::{
+    MENU, allocator, hlt_loop, init,
     interrupts::{clear_screen, disable_cursor},
-    println, hlt_loop, init, allocator, memory::{self, BootInfoFrameAllocator}, MENU
+    memory::{self, BootInfoFrameAllocator},
+    println,
 };
 use bootloader::{BootInfo, entry_point};
 use core::panic::PanicInfo;

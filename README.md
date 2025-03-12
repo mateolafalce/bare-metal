@@ -43,7 +43,7 @@ QEMU and the [`bootimage`] tool need to be installed for this.
 You can also write the image to an USB stick for booting it on a real machine. On Linux, the command for this is:
 
 ```
-dd if=target/x86_64-blog_os/debug/bootimage-blog_os.bin of=/dev/sdX && sync
+dd if=target/x86_64/debug/bootimage-bare-metal.bin of=/dev/sdX && sync
 ```
 
 Where `sdX` is the device name of your USB stick. **Be careful** to choose the correct device name, because everything on that device is overwritten.

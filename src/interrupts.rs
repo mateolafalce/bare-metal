@@ -1,7 +1,8 @@
-use crate::{gdt, hlt_loop, println, vga_buffer::WRITER, MENU};
+use crate::{MENU, gdt, hlt_loop, println, vga_buffer::WRITER};
 use alloc::string::{String, ToString};
 use core::arch::asm;
 use lazy_static::lazy_static;
+use lscpu::Cpu;
 use pic8259::ChainedPics;
 use spin;
 use spin::Mutex;
@@ -9,7 +10,6 @@ use x86_64::{
     instructions::port::Port,
     structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode},
 };
-use lscpu::Cpu;
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
@@ -135,7 +135,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
                     21 => {
                         cpu_info();
                         *wait = true;
-                    }, 
+                    }
                     22 => reboot(),
                     23 => turn_off(),
                     _ => (),
