@@ -2,6 +2,7 @@
 
 VGA Menu operations:
 
++ CPU data
 + Reboot
 + Shutdown
 

@@ -1,4 +1,4 @@
-use crate::{gdt, hlt_loop, println, vga_buffer::WRITER};
+use crate::{gdt, hlt_loop, println, vga_buffer::WRITER, MENU};
 use alloc::string::{String, ToString};
 use core::arch::asm;
 use lazy_static::lazy_static;
@@ -9,9 +9,11 @@ use x86_64::{
     instructions::port::Port,
     structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode},
 };
+use lscpu::Cpu;
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
+const MENU_RANGE: (u8, u8) = (21, 23);
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -47,7 +49,8 @@ lazy_static! {
         idt[InterruptIndex::Keyboard.as_usize()].set_handler_fn(keyboard_interrupt_handler);
         idt
     };
-    static ref INDEX_MENU: Mutex<u8> = Mutex::new(0);
+    static ref INDEX_MENU: Mutex<u8> = Mutex::new(MENU_RANGE.0);
+    static ref WAIT_ENTER: Mutex<bool> = Mutex::new(false);
 }
 
 pub fn init_idt() {
@@ -124,32 +127,53 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
 
     match key {
         DecodedKey::Unicode(key) => {
-            if key == '\n' {
+            let mut wait = WAIT_ENTER.lock();
+            clear_screen();
+            if key == '\n' && *wait == false {
                 let index = INDEX_MENU.lock();
                 match *index {
-                    0 => reboot(),
-                    1 => turn_off(),
+                    21 => {
+                        cpu_info();
+                        *wait = true;
+                    }, 
+                    22 => reboot(),
+                    23 => turn_off(),
                     _ => (),
                 }
+            } else if key == '\n' && *wait == true {
+                println!("{MENU}");
+                *wait = false;
             }
         }
         DecodedKey::RawKey(key) => match key {
             KeyCode::ArrowUp => {
+                let mut index_menu = INDEX_MENU.lock();
+                if *index_menu > MENU_RANGE.0 {
+                    *index_menu -= 1;
+                }
                 let mut writer = WRITER.lock();
-                writer.write_char_at(1, 23, b' ');
-                writer.write_char_at(1, 22, b'*');
-                let mut menu = INDEX_MENU.lock();
-                if *menu > 0 {
-                    *menu -= 1;
+                for i in 0..=(MENU_RANGE.1 - MENU_RANGE.0) {
+                    let current_index_for_print: u8 = MENU_RANGE.0 + i;
+                    if current_index_for_print == *index_menu {
+                        writer.write_char_at(1, current_index_for_print.into(), b'*');
+                    } else {
+                        writer.write_char_at(1, current_index_for_print.into(), b' ');
+                    }
                 }
             }
             KeyCode::ArrowDown => {
+                let mut index_menu = INDEX_MENU.lock();
+                if *index_menu < MENU_RANGE.1 {
+                    *index_menu += 1;
+                }
                 let mut writer = WRITER.lock();
-                writer.write_char_at(1, 22, b' ');
-                writer.write_char_at(1, 23, b'*');
-                let mut menu = INDEX_MENU.lock();
-                if *menu < 1 {
-                    *menu += 1;
+                for i in 0..=(MENU_RANGE.1 - MENU_RANGE.0) {
+                    let current_index_for_print: u8 = MENU_RANGE.0 + i;
+                    if current_index_for_print == *index_menu {
+                        writer.write_char_at(1, current_index_for_print.into(), b'*');
+                    } else {
+                        writer.write_char_at(1, current_index_for_print.into(), b' ');
+                    }
                 }
             }
             _ => (),
@@ -209,4 +233,9 @@ fn turn_off() {
     unsafe {
         outw(0x604, 0x2000);
     }
+}
+
+fn cpu_info() {
+    println!("{}", Cpu::new());
+    println!("PRESS ENTER TO CONTINUE");
 }

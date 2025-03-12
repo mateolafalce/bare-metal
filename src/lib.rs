@@ -8,6 +8,8 @@
 extern crate alloc;
 use core::panic::PanicInfo;
 
+pub const MENU: &str = "[*] CPU info\n[ ] Reboot\n[ ] Shutdown";
+
 pub mod allocator;
 pub mod gdt;
 pub mod interrupts;
