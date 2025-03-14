@@ -6,13 +6,11 @@ on:
   pull_request:
 
 jobs:
-
-
   tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -21,20 +19,20 @@ jobs:
           override: true
 
       - name: version info
-        run:  rustc --version; cargo --version;
+        run: rustc --version; cargo --version;
 
-      - name: Run all tests
-        run: cargo test
+      - name: Run tests (no_std)
+        run: cargo test --no-default-features --target x86_64-unknown-none
 
-      - name: Run all tests (no default features)
+      - name: Run tests (no default features)
         run: cargo test --no-default-features
-
-
+        # No es necesario si ya estás corriendo en no_std.
+        
   fmt:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -47,12 +45,11 @@ jobs:
           command: fmt
           args: --all -- --check
 
-
   clippy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -65,12 +62,11 @@ jobs:
           command: clippy
           args: -- -D warnings
 
-
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
 
       - uses: actions-rs/toolchain@v1
         with:
