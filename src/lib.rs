@@ -8,7 +8,8 @@
 extern crate alloc;
 use core::panic::PanicInfo;
 
-pub const MENU: &str = "[*] CPU info\n[ ] Reboot\n[ ] Shutdown";
+pub const MENU: &str =
+    "[*] CPU info\n[ ] Draw a 320x200 image in video mode\n[ ] Reboot\n[ ] Shutdown";
 
 pub mod allocator;
 pub mod gdt;

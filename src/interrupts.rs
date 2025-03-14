@@ -1,19 +1,26 @@
-use crate::{MENU, gdt, hlt_loop, println, vga_buffer::WRITER};
+use crate::{
+    MENU, gdt, hlt_loop, println,
+    vga_buffer::{BUFFER_HEIGHT, BUFFER_WIDTH, WRITER},
+};
 use alloc::string::{String, ToString};
 use core::arch::asm;
 use lazy_static::lazy_static;
 use lscpu::Cpu;
 use pic8259::ChainedPics;
-use spin;
-use spin::Mutex;
+use spin::{self, Mutex};
+use vga::writers::Text80x25;
+use vga::writers::TextWriter;
+use vga::writers::{Graphics320x200x256, GraphicsWriter};
 use x86_64::{
     instructions::port::Port,
     structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode},
 };
 
+static IMAGE_DATA: &[u8] = include_bytes!("../output.bin");
+
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
-const MENU_RANGE: (u8, u8) = (21, 23);
+const MENU_RANGE: (u8, u8) = (20, 23);
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -51,6 +58,7 @@ lazy_static! {
     };
     static ref INDEX_MENU: Mutex<u8> = Mutex::new(MENU_RANGE.0);
     static ref WAIT_ENTER: Mutex<bool> = Mutex::new(false);
+    static ref VIDEO_CHANGE: Mutex<bool> = Mutex::new(false);
 }
 
 pub fn init_idt() {
@@ -128,20 +136,37 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     match key {
         DecodedKey::Unicode(key) => {
             let mut wait = WAIT_ENTER.lock();
+            let mut video_change = VIDEO_CHANGE.lock();
             clear_screen();
-            if key == '\n' && *wait == false {
+            if key == '\n' && !(*wait) {
                 let index = INDEX_MENU.lock();
                 match *index {
-                    21 => {
+                    20 => {
                         cpu_info();
+                        *wait = true;
+                    }
+                    21 => {
+                        print_image();
+                        *video_change = true;
                         *wait = true;
                     }
                     22 => reboot(),
                     23 => turn_off(),
                     _ => (),
                 }
-            } else if key == '\n' && *wait == true {
+            } else if key == '\n' && *wait && !(*video_change) {
                 println!("{MENU}");
+                *wait = false;
+            } else if key == '\n' && *wait && *video_change {
+                let text_mode = Text80x25::new();
+                text_mode.set_mode();
+                disable_cursor();
+                clear_screen();
+                println!("{MENU}");
+
+                let mut index_menu = INDEX_MENU.lock();
+                *index_menu = MENU_RANGE.0;
+                *video_change = false;
                 *wait = false;
             }
         }
@@ -186,16 +211,10 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     }
 }
 
-#[test_case]
-fn test_breakpoint_exception() {
-    // invoke a breakpoint exception
-    x86_64::instructions::interrupts::int3();
-}
-
 pub fn clear_screen() {
-    let blank = [b' '; 80];
+    let blank = [b' '; BUFFER_WIDTH];
     let blank_string = String::from_utf8_lossy(&blank).to_string();
-    for _ in 0..25 {
+    for _ in 0..BUFFER_HEIGHT {
         println!("{}", blank_string);
     }
 }
@@ -238,4 +257,17 @@ fn turn_off() {
 fn cpu_info() {
     println!("{}", Cpu::new());
     println!("PRESS ENTER TO CONTINUE");
+}
+
+fn print_image() {
+    let mode = Graphics320x200x256::new();
+    mode.set_mode();
+    let mut i = 0;
+    for x in 0..200 {
+        for y in 0..320 {
+            let color = IMAGE_DATA[i];
+            mode.set_pixel(y, x, color);
+            i += 1;
+        }
+    }
 }

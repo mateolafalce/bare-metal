@@ -9,7 +9,7 @@ lazy_static! {
     /// Used by the `print!` and `println!` macros.
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
-        color_code: ColorCode::new(Color::White, Color::DarkGray),
+        color_code: ColorCode::new(Color::White, Color::Blue),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     });
 }
@@ -40,11 +40,11 @@ pub enum Color {
 /// A combination of a foreground and a background color.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-struct ColorCode(u8);
+pub struct ColorCode(pub u8);
 
 impl ColorCode {
     /// Create a new `ColorCode` with the given foreground and background colors.
-    fn new(foreground: Color, background: Color) -> ColorCode {
+    pub fn new(foreground: Color, background: Color) -> ColorCode {
         ColorCode((background as u8) << 4 | (foreground as u8))
     }
 }
@@ -58,9 +58,9 @@ struct ScreenChar {
 }
 
 /// The height of the text buffer (normally 25 lines).
-const BUFFER_HEIGHT: usize = 25;
+pub const BUFFER_HEIGHT: usize = 25;
 /// The width of the text buffer (normally 80 columns).
-const BUFFER_WIDTH: usize = 80;
+pub const BUFFER_WIDTH: usize = 80;
 
 /// A structure representing the VGA text buffer.
 #[repr(transparent)]
@@ -74,7 +74,7 @@ struct Buffer {
 /// `core::fmt::Write` trait.
 pub struct Writer {
     column_position: usize,
-    color_code: ColorCode,
+    pub color_code: ColorCode,
     buffer: &'static mut Buffer,
 }
 

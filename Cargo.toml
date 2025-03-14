@@ -14,3 +14,4 @@ pc-keyboard = "0.8.0"
 linked_list_allocator = "0.10.5"
 lazy_static = {version = "1.5", features = ["spin_no_std"]}
 lscpu = "1.0.4"
+vga = "0.2.9"
