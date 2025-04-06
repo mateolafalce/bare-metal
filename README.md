@@ -70,3 +70,7 @@ fn main() {
     std::fs::write("output.bin", raw_data).unwrap();
 }
 ```
+
+## Demo
+
+![Demo](how_works.gif)
